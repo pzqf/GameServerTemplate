@@ -7,7 +7,6 @@ import (
 	"github.com/pzqf/zEngine/zLog"
 	"github.com/pzqf/zEngine/zService"
 	"github.com/pzqf/zEngine/zSignal"
-	"github.com/pzqf/zUtil/zKeyWordFilter"
 	"go.uber.org/zap"
 	"log"
 )
@@ -36,13 +35,14 @@ func main() {
 	//初始化配置数据
 
 	//初始化各模块
-	zKeyWordFilter.InitDefaultFilter()
-	err = zKeyWordFilter.ParseFromFile(`keyword.txt`)
-	if err != nil {
-		zLog.Error("KeyWordFilter.ParseFromFile error ", zap.Error(err))
-		return
-	}
-
+	/*
+		zKeyWordFilter.InitDefaultFilter()
+		err = zKeyWordFilter.ParseFromFile(`keyword.txt`)
+		if err != nil {
+			zLog.Error("KeyWordFilter.ParseFromFile error ", zap.Error(err))
+			return
+		}
+	*/
 	//初始化各服务
 	sm := zService.ServiceManager{}
 

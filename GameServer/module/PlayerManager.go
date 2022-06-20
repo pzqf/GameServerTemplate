@@ -19,9 +19,11 @@ func NewPlayerManager() *PlayerManager {
 }
 
 func GetPlayerManager() *PlayerManager {
-	once.Do(func() {
-		GPlayerManager = NewPlayerManager()
-	})
+	if GPlayerManager == nil {
+		once.Do(func() {
+			GPlayerManager = NewPlayerManager()
+		})
+	}
 
 	return GPlayerManager
 }
