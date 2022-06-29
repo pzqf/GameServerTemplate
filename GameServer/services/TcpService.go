@@ -31,14 +31,14 @@ func (ts *TcpService) Init() error {
 
 	netCfg := zNet.Config{
 		MaxPacketDataSize: zNet.DefaultPacketDataSize,
-		ListenAddress:     fmt.Sprintf(":%d", config.GConfig.Server.Port),
-		MaxClientCount:    config.GConfig.Server.MaxClientCount,
+		ListenAddress:     fmt.Sprintf(":%d", config.GConfig.TcpServer.Port),
+		MaxClientCount:    config.GConfig.TcpServer.MaxClientCount,
 		ChanSize:          256,
 		HeartbeatDuration: 30,
 	}
 
 	ts.tcpServer = zNet.NewTcpServer(&netCfg, zNet.WithLogPrintFunc(func(v ...any) {
-		zLog.Error("zNet info", zap.Any("info", v))
+		zLog.Info("zNet info", zap.Any("info", v))
 	}))
 	ts.tcpServer.SetRemoveSessionCallBack(module.GetPlayerManager().OnRemoveSession)
 

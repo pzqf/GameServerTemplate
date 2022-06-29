@@ -9,19 +9,30 @@ import (
 	"github.com/pzqf/zEngine/zSignal"
 	"go.uber.org/zap"
 	"log"
+	"strings"
 )
 
 func main() {
 	log.Println("server start...")
 	//初始化程序配置
-	configFile := flag.String("c", "config.toml", "set configuration `file`")
+	/*
+		configFile := flag.String("c", "config.toml", "set configuration `file`")
+		flag.Parse()
+
+		err := config.InitDefaultConfig(*configFile)
+	*/
+
+	etcdAddrs := flag.String("e", "127.0.0.1:2379", "etcd server addr, cluster by ','")
+	serverId := flag.Int("i", 0, "server id")
 	flag.Parse()
 
-	err := config.InitDefaultConfig(*configFile)
+	err := config.InitDefaultConfigByEtcd(*serverId, strings.Split(*etcdAddrs, ","))
 	if err != nil {
 		log.Println(err)
 		return
 	}
+
+	log.Println("config load from etcd server success ")
 
 	//初始化日志
 	err = zLog.InitLogger(&config.GConfig.Logger)
@@ -56,6 +67,10 @@ func main() {
 	}
 	if err = sm.AddService(services.NewRpcService()); err != nil {
 		zLog.Error("add service RpcService failed ", zap.Error(err))
+		return
+	}
+	if err = sm.AddService(services.NewOnlineService()); err != nil {
+		zLog.Error("add service OnlineService failed ", zap.Error(err))
 		return
 	}
 
