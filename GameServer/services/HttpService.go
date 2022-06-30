@@ -35,6 +35,7 @@ func (ts *HttpService) Init() error {
 		route := fmt.Sprintf("/%d", k)
 		ts.httpServer.HandleFunc(route, func(writer http.ResponseWriter, request *http.Request) {
 			data, _ := io.ReadAll(request.Body)
+			defer request.Body.Close()
 			v(zNet.NewHttpSession(writer), k, data)
 		})
 		zLog.Info("http register", zap.String("route", route), zap.String("func", runtime.FuncForPC(reflect.ValueOf(v).Pointer()).Name()))

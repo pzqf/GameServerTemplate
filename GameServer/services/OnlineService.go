@@ -33,7 +33,9 @@ func (os *OnlineService) Init() error {
 
 	os.etcdKey = fmt.Sprintf("/server/game_server/online/%d", config.GConfig.Server.Id)
 
-	_, err = cli.PutWithTTL(context.Background(), os.etcdKey, "online", int64(config.GConfig.Server.Heartbeat*3))
+	uploadInfo := "online"
+
+	_, err = cli.PutWithTTL(context.Background(), os.etcdKey, uploadInfo, int64(config.GConfig.Server.Heartbeat*3))
 	if err != nil {
 		return err
 	}
@@ -58,7 +60,8 @@ func (os *OnlineService) Serve() {
 		for {
 			select {
 			case <-time.After(time.Duration(config.GConfig.Server.Heartbeat) * time.Second):
-				_, err := os.etcdCli.PutWithTTL(context.Background(), os.etcdKey, "online", int64(config.GConfig.Server.Heartbeat*3))
+				uploadInfo := "online"
+				_, err := os.etcdCli.PutWithTTL(context.Background(), os.etcdKey, uploadInfo, int64(config.GConfig.Server.Heartbeat*3))
 				if err != nil {
 					return
 				}
