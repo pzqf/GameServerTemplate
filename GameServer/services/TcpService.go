@@ -2,7 +2,6 @@ package services
 
 import (
 	"ServerTemplate/GameServer/config"
-	"ServerTemplate/GameServer/handler"
 	"ServerTemplate/GameServer/module"
 	"fmt"
 	"github.com/pzqf/zEngine/zLog"
@@ -23,12 +22,6 @@ func NewTcpService() *TcpService {
 }
 
 func (ts *TcpService) Init() error {
-	err := handler.Init()
-	if err != nil {
-		zLog.Error("RegisterHandler error %d", zap.Error(err))
-		return err
-	}
-
 	netCfg := zNet.Config{
 		MaxPacketDataSize: zNet.DefaultPacketDataSize,
 		ListenAddress:     fmt.Sprintf(":%d", config.GConfig.TcpServer.Port),
@@ -37,9 +30,7 @@ func (ts *TcpService) Init() error {
 		HeartbeatDuration: 30,
 	}
 
-	ts.tcpServer = zNet.NewTcpServer(&netCfg, zNet.WithLogPrintFunc(func(v ...any) {
-		zLog.Info("zNet info", zap.Any("info", v))
-	}))
+	ts.tcpServer = zNet.NewTcpServer(&netCfg)
 	ts.tcpServer.SetRemoveSessionCallBack(module.GetPlayerManager().OnRemoveSession)
 
 	zLog.Info("tcp server init success", zap.Int("maxClientCount", 10000),

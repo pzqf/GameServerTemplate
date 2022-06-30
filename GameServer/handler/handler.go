@@ -7,7 +7,6 @@ import (
 )
 
 func Init() error {
-
 	zNet.InitDispatcherWorkerPool(10000)
 
 	err := RegisterPlayerHandler()
@@ -27,7 +26,6 @@ func TestPing(session zNet.Session, protoId int32, data []byte) {
 	var reqData protocol.TestPingReq
 
 	_ = json.Unmarshal(data, &reqData)
-
 	resData := protocol.TestPingRes{
 		Id:   reqData.Id,
 		Name: reqData.Name,

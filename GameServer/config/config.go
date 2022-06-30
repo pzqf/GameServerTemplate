@@ -9,6 +9,7 @@ import (
 	"github.com/pzqf/zEngine/zLog"
 	"log"
 	"path/filepath"
+	"time"
 )
 
 type ServerConfig struct {
@@ -22,10 +23,15 @@ type TcpServerConfig struct {
 	MaxClientCount int32 `toml:"max_client_count" json:"max_client_count"`
 }
 
+type HttpServerConfig struct {
+	Port int `toml:"port" json:"port"`
+}
+
 type Config struct {
-	Server     ServerConfig    `toml:"server" json:"server"`
-	TcpServer  TcpServerConfig `toml:"tcp_server" json:"tcp_server"`
-	Logger     zLog.Config     `toml:"log" json:"log"`
+	Server     ServerConfig     `toml:"server" json:"server"`
+	TcpServer  TcpServerConfig  `toml:"tcp_server" json:"tcp_server"`
+	HttpServer HttpServerConfig `toml:"http_server" json:"http_server"`
+	Logger     zLog.Config      `toml:"log" json:"log"`
 	EtcdServer []string
 }
 
@@ -78,11 +84,17 @@ func InitDefaultConfigByEtcd(serverId int, etcdAddress []string) error {
 	cli, err := zEtcd.NewEtcdClient(&zEtcd.ClientConfig{
 		Endpoints: etcdAddress,
 	})
-	key := fmt.Sprintf("/config/game_server/%d", serverId)
-	configContent, err := cli.GetOne(context.Background(), key)
 	if err != nil {
 		return err
 	}
+	key := fmt.Sprintf("/config/game_server/%d", serverId)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	configContent, err := cli.GetOne(ctx, key)
+	cancel()
+	if err != nil {
+		return err
+	}
+
 	cfg, err := Load(configContent)
 	if err != nil {
 		return err
@@ -95,35 +107,27 @@ func InitDefaultConfigByEtcd(serverId int, etcdAddress []string) error {
 
 	watcher, eventCh := cli.Watch(context.Background(), key, false)
 	go func() {
-		for true {
-			select {
-			case e, ok := <-eventCh:
-				if !ok {
-					return
-				}
-
-				switch e.Event {
-				case zEtcd.EventCreate, zEtcd.EventModify:
-					configContent, err = cli.GetOne(context.Background(), key)
-					if err != nil {
-						continue
-					}
-					cfg, err = Load(configContent)
-					if err != nil {
-						continue
-					}
-					GConfig = cfg
-					log.Println("config load", e.Data)
-				case zEtcd.EventDelete:
-					log.Println("delete", e.Data)
+		for e := range eventCh {
+			switch e.Event {
+			case zEtcd.EventCreate, zEtcd.EventModify:
+				configContent, err = cli.GetOne(context.Background(), key)
+				if err != nil {
 					continue
-				case zEtcd.EventWatchCancel:
-					_ = watcher.Close()
-					return
 				}
+				cfg, err = Load(configContent)
+				if err != nil {
+					continue
+				}
+				GConfig = cfg
+				log.Println("config reload", e.Data)
+			case zEtcd.EventDelete:
+				log.Println("delete", e.Data)
+				continue
+			case zEtcd.EventWatchCancel:
+				_ = watcher.Close()
+				return
 			}
 		}
-
 	}()
 
 	return nil

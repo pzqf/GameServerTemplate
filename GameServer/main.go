@@ -2,9 +2,11 @@ package main
 
 import (
 	"ServerTemplate/GameServer/config"
+	"ServerTemplate/GameServer/handler"
 	"ServerTemplate/GameServer/services"
 	"flag"
 	"github.com/pzqf/zEngine/zLog"
+	"github.com/pzqf/zEngine/zNet"
 	"github.com/pzqf/zEngine/zService"
 	"github.com/pzqf/zEngine/zSignal"
 	"go.uber.org/zap"
@@ -54,6 +56,16 @@ func main() {
 			return
 		}
 	*/
+
+	zNet.SetLogPrintFunc(func(v ...any) {
+		zLog.Info("zNet info", zap.Any("info", v))
+	})
+
+	err = handler.Init()
+	if err != nil {
+		zLog.Error("RegisterHandler error %d", zap.Error(err))
+		return
+	}
 	//初始化各服务
 	sm := zService.ServiceManager{}
 
