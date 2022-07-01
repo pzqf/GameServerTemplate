@@ -14,24 +14,13 @@ import (
 	"strings"
 )
 
-func main() {
-	log.Println("server start...")
-	//初始化程序配置
-	/*
-		configFile := flag.String("c", "config.toml", "set configuration `file`")
-		flag.Parse()
+var sm = zService.ServiceManager{}
 
-		err := config.InitDefaultConfig(*configFile)
-	*/
-
-	etcdAddrs := flag.String("e", "127.0.0.1:2379", "etcd server addr, cluster by ','")
-	serverId := flag.Int("i", 0, "server id")
-	flag.Parse()
-
-	err := config.InitDefaultConfigByEtcd(*serverId, strings.Split(*etcdAddrs, ","))
+func Init(serverId int, etcdAddress []string) error {
+	err := config.InitDefaultConfigByEtcd(serverId, etcdAddress)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
 
 	log.Println("config load from etcd server success ")
@@ -40,7 +29,7 @@ func main() {
 	err = zLog.InitLogger(&config.GConfig.Logger)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
 
 	zLog.Info(`server start....`)
@@ -64,33 +53,61 @@ func main() {
 	err = handler.Init()
 	if err != nil {
 		zLog.Error("RegisterHandler error %d", zap.Error(err))
-		return
+		return err
 	}
 	//初始化各服务
-	sm := zService.ServiceManager{}
-
 	if err = sm.AddService(services.NewTcpService()); err != nil {
 		zLog.Error("add service TcpService failed ", zap.Error(err))
-		return
+		return err
 	}
 	if err = sm.AddService(services.NewHttpService()); err != nil {
 		zLog.Error("add service HttpService failed ", zap.Error(err))
-		return
+		return err
 	}
 	if err = sm.AddService(services.NewRpcService()); err != nil {
 		zLog.Error("add service RpcService failed ", zap.Error(err))
-		return
+		return err
 	}
 	if err = sm.AddService(services.NewOnlineService()); err != nil {
 		zLog.Error("add service OnlineService failed ", zap.Error(err))
-		return
+		return err
 	}
 
 	sm.InitServices()
+	return nil
+}
+
+func Serve() {
 	sm.ServeServices()
 
-	zSignal.GracefulExit()
+	s, err := sm.GetService(services.ServiceIdOnlineService)
+	if err == nil {
+		_ = s.(*services.OnlineService).Update()
+	}
+}
+
+func Stop() {
 	zLog.Info("server will be shutdown")
 	sm.CloseServices()
 	zLog.Info("server exit")
+}
+
+func main() {
+	log.Println("server start...")
+	etcdAddr := flag.String("e", "127.0.0.1:2379", "etcd server addr, cluster by ','")
+	serverId := flag.Int("i", 0, "server id")
+	flag.Parse()
+
+	if *serverId <= 0 {
+		log.Println("server id is 0")
+		return
+	}
+
+	err := Init(*serverId, strings.Split(*etcdAddr, ","))
+	if err != nil {
+		return
+	}
+	Serve()
+	zSignal.GracefulExit()
+	Stop()
 }

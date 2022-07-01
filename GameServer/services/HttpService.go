@@ -2,6 +2,7 @@ package services
 
 import (
 	"ServerTemplate/GameServer/config"
+	"encoding/json"
 	"fmt"
 	"github.com/pzqf/zEngine/zLog"
 	"github.com/pzqf/zEngine/zNet"
@@ -25,11 +26,11 @@ func NewHttpService() *HttpService {
 }
 
 func (ts *HttpService) Init() error {
-	if config.GConfig.HttpServer.Port <= 0 {
+	if config.GConfig.HttpServer.Addr == "" {
 		return nil
 	}
 
-	ts.httpServer = zNet.NewHttpServer(config.GConfig.HttpServer.Port)
+	ts.httpServer = zNet.NewHttpServer(config.GConfig.HttpServer.Addr)
 
 	for k, v := range zNet.GetHandler() {
 		route := fmt.Sprintf("/%d", k)
@@ -43,7 +44,8 @@ func (ts *HttpService) Init() error {
 
 	//custom add
 	ts.httpServer.HandleFunc("/config", func(writer http.ResponseWriter, request *http.Request) {
-		_, _ = writer.Write([]byte("dffdf"))
+		b, _ := json.Marshal(config.GConfig)
+		_, _ = writer.Write(b)
 	})
 
 	return nil
@@ -58,8 +60,8 @@ func (ts *HttpService) Close() error {
 
 func (ts *HttpService) Serve() {
 	if ts.httpServer != nil {
-		ts.httpServer.Start()
+		_ = ts.httpServer.Start()
 	}
 
-	zLog.Info("http info", zap.String("info", fmt.Sprintf("http server listing on %d", config.GConfig.HttpServer.Port)))
+	zLog.Info("http info", zap.String("info", fmt.Sprintf("http server listing on %s", config.GConfig.HttpServer.Addr)))
 }

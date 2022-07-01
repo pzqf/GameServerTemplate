@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/pelletier/go-toml"
-	"github.com/pzqf/zEngine/zEtcd"
-	"github.com/pzqf/zEngine/zLog"
 	"log"
 	"path/filepath"
 	"time"
+
+	"github.com/pelletier/go-toml"
+	"github.com/pzqf/zEngine/zEtcd"
+	"github.com/pzqf/zEngine/zLog"
 )
 
 type ServerConfig struct {
@@ -24,7 +25,7 @@ type TcpServerConfig struct {
 }
 
 type HttpServerConfig struct {
-	Port int `toml:"port" json:"port"`
+	Addr string `toml:"addr" json:"addr"`
 }
 
 type Config struct {
@@ -119,9 +120,10 @@ func InitDefaultConfigByEtcd(serverId int, etcdAddress []string) error {
 					continue
 				}
 				GConfig = cfg
-				log.Println("config reload", e.Data)
+				log.Println("config reload", e.Data, "maybe need restart")
 			case zEtcd.EventDelete:
 				log.Println("delete", e.Data)
+
 				continue
 			case zEtcd.EventWatchCancel:
 				_ = watcher.Close()

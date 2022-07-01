@@ -30,15 +30,11 @@ func (os *OnlineService) Init() error {
 	cli, err := zEtcd.NewEtcdClient(&zEtcd.ClientConfig{
 		Endpoints: config.GConfig.EtcdServer,
 	})
-
-	os.etcdKey = fmt.Sprintf("/server/game_server/online/%d", config.GConfig.Server.Id)
-
-	uploadInfo := "online"
-
-	_, err = cli.PutWithTTL(context.Background(), os.etcdKey, uploadInfo, int64(config.GConfig.Server.Heartbeat*3))
 	if err != nil {
 		return err
 	}
+
+	os.etcdKey = fmt.Sprintf("/server/game_server/online/%d", config.GConfig.Server.Id)
 
 	os.etcdCli = cli
 
@@ -60,8 +56,7 @@ func (os *OnlineService) Serve() {
 		for {
 			select {
 			case <-time.After(time.Duration(config.GConfig.Server.Heartbeat) * time.Second):
-				uploadInfo := "online"
-				_, err := os.etcdCli.PutWithTTL(context.Background(), os.etcdKey, uploadInfo, int64(config.GConfig.Server.Heartbeat*3))
+				err := os.Update()
 				if err != nil {
 					return
 				}
@@ -70,4 +65,13 @@ func (os *OnlineService) Serve() {
 			}
 		}
 	}()
+}
+
+func (os *OnlineService) Update() error {
+	uploadInfo := "online"
+	_, err := os.etcdCli.PutWithTTL(context.Background(), os.etcdKey, uploadInfo, int64(config.GConfig.Server.Heartbeat*3))
+	if err != nil {
+		return err
+	}
+	return nil
 }
