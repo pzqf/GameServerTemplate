@@ -3,7 +3,7 @@ package player
 import "github.com/pzqf/zEngine/zObject"
 
 type Player struct {
-	zObject.Object
+	zObject.BaseObject
 	Name string
 }
 
