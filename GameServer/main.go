@@ -1,22 +1,27 @@
 package main
 
 import (
+	"ServerTemplate/GameServer/GameConfig"
+	"ServerTemplate/GameServer/SensitiveWords"
 	"ServerTemplate/GameServer/config"
 	"ServerTemplate/GameServer/handler"
 	"ServerTemplate/GameServer/services"
 	"flag"
+	"log"
+	"strings"
+
 	"github.com/pzqf/zEngine/zLog"
 	"github.com/pzqf/zEngine/zNet"
 	"github.com/pzqf/zEngine/zService"
 	"github.com/pzqf/zEngine/zSignal"
 	"go.uber.org/zap"
-	"log"
-	"strings"
 )
 
 var sm = zService.ServiceManager{}
 
 func Init(serverId int, etcdAddress []string) error {
+	//获取程序配置及初始化日志================================
+	//程序配置项，可从配置文件或ETCD获取
 	err := config.InitDefaultConfigByEtcd(serverId, etcdAddress)
 	if err != nil {
 		log.Println(err)
@@ -34,18 +39,18 @@ func Init(serverId int, etcdAddress []string) error {
 
 	zLog.Info(`server start....`)
 
-	//初始化配置数据
+	//初始化游戏配置数据
+	GameConfig.LoadGameConfig("D:\\37818\\Documents")
 
-	//初始化各模块
-	/*
-		zKeyWordFilter.InitDefaultFilter()
-		err = zKeyWordFilter.ParseFromFile(`keyword.txt`)
-		if err != nil {
-			zLog.Error("KeyWordFilter.ParseFromFile error ", zap.Error(err))
-			return
-		}
-	*/
+	//初始化各模块==========================================
+	//敏感词，来源于etcd
+	err = SensitiveWords.Init()
+	if err != nil {
+		zLog.Error("Sensitive words error ", zap.Error(err))
+		return err
+	}
 
+	//网络前置初始化=========================================
 	zNet.SetLogPrintFunc(func(v ...any) {
 		zLog.Info("zNet info", zap.Any("info", v))
 	})
@@ -55,7 +60,8 @@ func Init(serverId int, etcdAddress []string) error {
 		zLog.Error("RegisterHandler error %d", zap.Error(err))
 		return err
 	}
-	//初始化各服务
+
+	//初始化各服务=============================================
 	if err = sm.AddService(services.NewTcpService()); err != nil {
 		zLog.Error("add service TcpService failed ", zap.Error(err))
 		return err
