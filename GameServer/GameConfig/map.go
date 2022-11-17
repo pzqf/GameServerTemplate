@@ -11,8 +11,6 @@ type MapConfig struct {
 	MapFile string
 }
 
-var MapConfigData []MapConfig
-
 func LoadMapConfig(excelFile string) error {
 	f, err := excelize.OpenFile(excelFile)
 	if err != nil {

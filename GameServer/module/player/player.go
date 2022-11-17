@@ -1,6 +1,8 @@
 package player
 
-import "github.com/pzqf/zEngine/zObject"
+import (
+	"github.com/pzqf/zEngine/zObject"
+)
 
 type Player struct {
 	zObject.BaseObject
